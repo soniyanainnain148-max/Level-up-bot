@@ -1,13 +1,10 @@
+Flask
+gunicorn
 requests
-flask
-httpx
 protobuf
 pycryptodome
-psutil
-PyJWT
-urllib3
+aiohttp
 protobuf-decoder
 pytz
-aiohttp
 cfonts
-python-telegram-bot
+firebase-admin

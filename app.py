@@ -62,7 +62,7 @@ wait_after_match = 10
 web_app = Flask(__name__)
 CORS(web_app) 
 
-# 🔥 YAHAN APNI NAYI FIREBASE KEY DAALO 🔥
+# 🔥 YAHAN APNI FIREBASE KEY DAALO 🔥
 firebase_creds = {
   "type": "service_account",
   "project_id": "arpit-exp",
@@ -76,9 +76,18 @@ firebase_creds = {
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40arpit-exp.iam.gserviceaccount.com"
 }
 
-# 🔥 YEH LINE ERROR FIX KAREGI 🔥
+# 🔥 PRIVATE KEY FIX (Yeh line error ko solve karegi) 🔥
 if "private_key" in firebase_creds:
-    firebase_creds["private_key"] = firebase_creds["private_key"].replace("\\n", "\n")
+    key = firebase_creds["private_key"]
+    key = key.replace("\\n", "\n")
+    key = key.strip()
+    if "-----BEGIN PRIVATE KEY-----" in key and "-----END PRIVATE KEY-----" in key:
+        header = "-----BEGIN PRIVATE KEY-----"
+        footer = "-----END PRIVATE KEY-----"
+        key_body = key.replace(header, "").replace(footer, "").strip()
+        key_body = "\n".join([key_body[i:i+64] for i in range(0, len(key_body), 64)])
+        key = f"{header}\n{key_body}\n{footer}"
+    firebase_creds["private_key"] = key
 
 try:
     cred = credentials.Certificate(firebase_creds)

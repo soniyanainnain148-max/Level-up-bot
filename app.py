@@ -62,9 +62,35 @@ wait_after_match = 10
 web_app = Flask(__name__)
 CORS(web_app) 
 
-# 🔥 YAHAN FILE SE FIREBASE KEY UTHAYEGA 🔥
+# 🔥 YAHAN APNI NAYI FIREBASE KEY DAALO (Jo aapne abhi banayi hai) 🔥
+firebase_creds = {
+  "type": "service_account",
+  "project_id": "arpit-exp",
+  "private_key_id": "YAHAN_NAYI_PRIVATE_KEY_ID_DAALO",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nYAHAN_NAYI_PRIVATE_KEY_DAALO\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@arpit-exp.iam.gserviceaccount.com",
+  "client_id": "YAHAN_NAYI_CLIENT_ID_DAALO",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "YAHAN_NAYI_CLIENT_X509_CERT_URL_DAALO"
+}
+
+# 🔥 YEH LINE ERROR FIX KAREGI 🔥
+if "private_key" in firebase_creds:
+    key = firebase_creds["private_key"]
+    key = key.replace("\\n", "\n")
+    key = key.strip()
+    if "-----BEGIN PRIVATE KEY-----" in key and "-----END PRIVATE KEY-----" in key:
+        header = "-----BEGIN PRIVATE KEY-----"
+        footer = "-----END PRIVATE KEY-----"
+        key_body = key.replace(header, "").replace(footer, "").strip()
+        key_body = "\n".join([key_body[i:i+64] for i in range(0, len(key_body), 64)])
+        key = f"{header}\n{key_body}\n{footer}"
+    firebase_creds["private_key"] = key
+
 try:
-    cred = credentials.Certificate("serviceAccountKey.json")
+    cred = credentials.Certificate(firebase_creds)
     firebase_admin.initialize_app(cred)
     db = firestore.client()
     print("✅ Firebase Connected")

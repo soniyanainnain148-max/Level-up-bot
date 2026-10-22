@@ -22,6 +22,7 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 from threading import Thread
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
@@ -55,23 +56,24 @@ start_spam_duration = 18
 wait_after_match = 10
 
 # =====================================================================
-# 🌐 FLASK APP & FIREBASE CONNECTION
+# 🌐 FLASK APP & CORS SETUP
 # =====================================================================
 
 web_app = Flask(__name__)
+CORS(web_app) 
 
-# 🔥 YAHAN APNI FIREBASE KEY DAALO 🔥
+# 🔥 YAHAN APNI NAYI FIREBASE KEY DAALO 🔥
 firebase_creds = {
   "type": "service_account",
   "project_id": "arpit-exp",
-  "private_key_id": "YAHAN_PRIVATE_KEY_ID_DAALO",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nYAHAN_PRIVATE_KEY_DAALO\n-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-xxxxx@arpit-exp.iam.gserviceaccount.com",
-  "client_id": "YAHAN_CLIENT_ID_DAALO",
+  "private_key_id": "27e94ebc8b3d6fa44ce7fa5f1fa136c4ad69f0d2",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCqkE7NWH/4RyVV\nv5qYINRdf2aoO3z8JdR3h3Y84o3VnrA5Xb5BCyZdbOtfF5q7d4tIa+VHE0Lt6xW0\nUlBOMVy44e+otox84REJcczN3sMtFSz+sFZbml0UqVulcBPSH5+RpHIqrQ7/sCVD\nb5TVNvm/Jj/a8TPRD/G1qEoTOrjECtyBwiDr36J6xAt+gywZB5ymKRiVU/7a2vQI\nBcYotO38O1MErjjbO7uEmtCWjDo0nZGZAhhLAc+0R8ZBjyNyx6JswNbF9Nv5xD5E\n6ruqkOtV5RrI8VGWwJlmZ3f8asBgVL2QFKJCOhHASYQfluCSUUjO+UkRniT55htT\nteFGvyDzAgMBAAECggEAAkf4zdVDrOHitXFhE2zI+lEkYdad1s94tnqI0cqj4/oB\n2FqRG1SXWEOHKFfr+VrhcYAD6n3u9Liiqy04prsRRuW6q1J5sYffDvXHK++xQ46X\ncfaQyRvY59hWAfHsSfCjVTLSVhDHdRL5hJve7TUVhQFxdC+qpj6k2G2eRACSjQik\nj7ISqp9G/MeIPrZXCRu4i5LUB7n1OfhZJaPgjHKUooAlVGg/TGGYou0fdU23BEAE\n9e76BRmu89AVdPoFiOycO2muNPVGVHzhLiE3H2E44bTuGc5h8Whp0KU2MIjqZJn7\nTshi/511tMfXpHa4l/cwNOR+jhqDeXmgBxvVlleznQKBgQDX2Qq3+9KssGeqROmS\nOQd5H8X9hC+n1EURfcRKhbNmQ+64G6r+DRY/l5cxhluD34OxoUeJ0xwr9g7dThK2\nTlzJqQ/Y8gxoQTOeb1oY7DnLg91iyJ2DPM4ZUEYq47L6BKkNZTIB2LbU7hWR4k0u\nm80mM7SPtSJF+IF2J6+rT1s45wKBgQDKSsbIrg8eXypIU9yPFV/kpMyotI8bBrWv\nuSBHHX3toP9m5/fHZliXX7jijZWHdx3m/bwHzR9O5cmNXolGKqeNQeQ3CHxynz1V\nyqSRoS24TVbHtD9vMo9G+C9eZxuvIitZfcbMOOUiLCWC3v0n568qUqFTZmTrtr1v\nEhH7gCQaFQKBgDEYulptGleTbJELScGr3SpM8uEefySCoQ9AdzSoQs1BKHySNovA\n+E2QsqBeOlS9s5vk3nvYHDFXr7vg9VqoamyoWuVy8SWJpy8jju/aU68aGHJOxZ1D\naHHTk5JP5rb99mIIoZ5P6A549UkQm5O9dqV431pMzjXyN6hjkI675zkDAoGAZIx8\nd/1EWIVW3/KHG7u1GVHsxCJTS0yvfDOZXp/DGx0+NakxWLR/bmZO4JUdcOL9QvZ1\nwq7rU+0VnKYTt4O2GplY1R3rtZF/DCiYWiZyMjyG2Oa37Q6FdvIfoV3AvfFO+MFy\n0cmp4q1sy7sIvBAF2hSOSYUIvrzrNc0WkRrlVu0CgYB829LySfjRObwKZybxOpg1\nPetgp5HAklZ2z0TRyds4IAI/VDuoosuU0Rzy12gsyhz2tqv+asAw5znuQX43qjWy\ng6aMtyLD7VJEzG3TXf/GdHoP/nWJ5sKOKko2RrbD1wcofmKycXW+I1zo15k6zOjc\nc7Y3sXOqGaZZ4T7DstyLYw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@arpit-exp.iam.gserviceaccount.com",
+  "client_id": "112232793926870754244",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "YAHAN_CLIENT_X509_CERT_URL_DAALO"
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40arpit-exp.iam.gserviceaccount.com"
 }
 
 # 🔥 YEH LINE ERROR FIX KAREGI 🔥

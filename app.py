@@ -44,7 +44,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- Global Variables ---
 ADMIN_UID = "5513136249"
-GUEST_UID = "5620974741"
+# 🔥 YAHAN APNI NAYI GUEST ID DAALO 🔥
+GUEST_UID = "5620974741" 
 GUEST_PASSWORD = "0FBFF31005D6A8579B7984CCFA280E2B30635FE000465BF1131453DA26AFAAA8"
 region = 'IND'
 
@@ -131,28 +132,43 @@ async def TcPChaT(ip, port, AutHToKen, key, iv, LoGinDaTaUncRypTinG, ready_event
         except: whisper_writer = None; await asyncio.sleep(reconnect_delay)
 
 async def MaiiiinE():
-    print("📁 Loading credentials...")
-    open_id, access_token = await GeNeRaTeAccEss(GUEST_UID, GUEST_PASSWORD)
-    if not open_id: print("❌ Invalid Account"); return None
-    PyL = await EncRypTMajoRLoGin(open_id, access_token)
-    resp = await MajorLogin(PyL)
-    if not resp: print("❌ Banned / Not Registered"); return None
-    auth = await DecRypTMajoRLoGin(resp)
-    ld = await GetLoginData(auth.url, PyL, auth.token)
-    if not ld: print("❌ Error getting ports"); return None
-    login_data = await DecRypTLoGinDaTa(ld)
-    online_ip, online_port = login_data.Online_IP_Port.split(":")
-    chat_ip, chat_port = login_data.AccountIP_Port.split(":")
-    auth_token = await xAuThSTarTuP(int(auth.account_uid), auth.token, int(auth.timestamp), auth.key, auth.iv)
-    ready = asyncio.Event()
-    asyncio.create_task(TcPChaT(chat_ip, chat_port, auth_token, auth.key, auth.iv, login_data, ready, 'IND'))
-    asyncio.create_task(TcPOnLine(online_ip, online_port, auth.key, auth.iv, auth_token))
-    await ready.wait()
-    print("✅ Bot Online")
-    return {'key': auth.key, 'iv': auth.iv}
+    print(f"🔍 Login Attempt: {GUEST_UID}")
+    try:
+        open_id, access_token = await GeNeRaTeAccEss(GUEST_UID, GUEST_PASSWORD)
+        if not open_id: 
+            print("❌ Invalid Account - GeNeRaTeAccEss Fail"); 
+            return None
+        
+        PyL = await EncRypTMajoRLoGin(open_id, access_token)
+        resp = await MajorLogin(PyL)
+        if not resp: 
+            print("❌ Banned / Not Registered - MajorLogin Fail"); 
+            return None
+        
+        auth = await DecRypTMajoRLoGin(resp)
+        ld = await GetLoginData(auth.url, PyL, auth.token)
+        if not ld: 
+            print("❌ Error getting ports - GetLoginData Fail"); 
+            return None
+        
+        login_data = await DecRypTLoGinDaTa(ld)
+        online_ip, online_port = login_data.Online_IP_Port.split(":")
+        chat_ip, chat_port = login_data.AccountIP_Port.split(":")
+        auth_token = await xAuThSTarTuP(int(auth.account_uid), auth.token, int(auth.timestamp), auth.key, auth.iv)
+        
+        ready = asyncio.Event()
+        asyncio.create_task(TcPChaT(chat_ip, chat_port, auth_token, auth.key, auth.iv, login_data, ready, 'IND'))
+        asyncio.create_task(TcPOnLine(online_ip, online_port, auth.key, auth.iv, auth_token))
+        
+        await ready.wait()
+        print("✅ Bot Online")
+        return {'key': auth.key, 'iv': auth.iv}
+    except Exception as e:
+        print(f"❌ Login Error: {e}")
+        return None
 
 # =====================================================================
-# 🚀 BOT RUNNER FOR WEBSITE (REAL DATA SAVING)
+# 🚀 BOT RUNNER FOR WEBSITE
 # =====================================================================
 async def run_bot_for_web(duration_seconds, user_email, bot_uid):
     print(f"🎮 Starting Match Loop for {duration_seconds} seconds...")
@@ -185,9 +201,8 @@ async def run_bot_for_web(duration_seconds, user_email, bot_uid):
             leave_packet = await leave_squad_packet(login_data['key'], login_data['iv'], 'IND')
             await SEndPacKeT(whisper_writer, online_writer, 'OnLine', leave_packet)
             
-            # 🔥 UPDATE FIREBASE WITH REAL DATA
             match_counter += 1
-            exp_counter += random.randint(50, 150) # Dummy exp barhao
+            exp_counter += random.randint(50, 150)
             try:
                 users_ref = db.collection("bot_accounts")
                 query = users_ref.where("userEmail", "==", user_email).where("ffUid", "==", bot_uid).stream()

@@ -8,3 +8,4 @@ protobuf-decoder
 pytz
 cfonts
 firebase-admin
+Flask-Cors

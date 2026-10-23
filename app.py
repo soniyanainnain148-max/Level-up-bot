@@ -1,82 +1,42 @@
 # BY Arpit ff
-# Modified for ARPIT EXP Website Integration
+# Modified for ARPIT EXP Website Integration (Simulation)
 
 import os
-import sys
-import time
 import json
+import time
 import random
-import socket
 import threading
-import signal
 import asyncio
-import ssl
-import urllib3
-import pytz
-import aiohttp
-import requests
+from flask import Flask, request, jsonify
+from flask_cors import CORS
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
-from threading import Thread
-from flask import Flask, jsonify, request
-from flask_cors import CORS
+app = Flask(__name__)
+CORS(app)
 
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad, unpad
-from google.protobuf.timestamp_pb2 import Timestamp
-from cfonts import render, say
+def init_firebase():
+    if not firebase_admin._apps:
+        firebase_key = os.getenv('FIREBASE_KEY')
+        if not firebase_key:
+            raise Exception("FIREBASE_KEY environment variable not set")
+        try:
+            config = json.loads(firebase_key)
+            if 'private_key' in config:
+                config['private_key'] = config['private_key'].replace('\\n', '\n')
+            cred = credentials.Certificate(config)
+            firebase_admin.initialize_app(cred)
+        except Exception as e:
+            print(f"Firebase Init Error: {e}")
+            raise e
 
-from protobuf_decoder.protobuf_decoder import Parser
-from xDL import *
-from Pb2 import (
-    DEcwHisPErMsG_pb2,
-    MajoRLoGinrEs_pb2,
-    PorTs_pb2,
-    MajoRLoGinrEq_pb2,
-    sQ_pb2,
-    Team_msg_pb2
-)
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# --- Global Variables ---
-ADMIN_UID = "5513136249"
-# 🔥 YAHAN APNI NAYI GUEST ID DAALO 🔥
-GUEST_UID = "5620974741" 
-GUEST_PASSWORD = "0FBFF31005D6A8579B7984CCFA280E2B30635FE000465BF1131453DA26AFAAA8"
-region = 'IND'
-
-online_writer = None
-whisper_writer = None
-stop_auto = False
-auto_start_task = None
-start_spam_duration = 18
-wait_after_match = 10
-
-# =====================================================================
-# 🌐 FLASK APP & FIREBASE CONNECTION
-# =====================================================================
-web_app = Flask(__name__)
-CORS(web_app) 
-
-firebase_key_json = os.environ.get("FIREBASE_KEY")
-
-if not firebase_key_json:
-    print("❌ Firebase Key Environment Variable mein nahi mili!")
-else:
-    try:
-        creds_dict = json.loads(firebase_key_json)
-        if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-        cred = credentials.Certificate(creds_dict)
-        firebase_admin.initialize_app(cred)
+db = None
+def get_db():
+    global db
+    if db is None:
+        init_firebase()
         db = firestore.client()
-        print("✅ Firebase Connected Successfully!")
-    except Exception as e:
-        print(f"❌ Firebase Error: {e}")
+    return db
 
 loop = asyncio.new_event_loop()
 def start_loop():
@@ -84,165 +44,47 @@ def start_loop():
     loop.run_forever()
 threading.Thread(target=start_loop, daemon=True).start()
 
-# =====================================================================
-# 🤖 BOT FUNCTIONS
-# =====================================================================
-async def start_auto_packet(key, iv, region):
-    return await GeneRaTePk((await CrEaTe_ProTo({1: 9, 2: {1: 12480598706}})).hex(), '0514' if region.lower() == "ind" else "0515", key, iv)
-
-async def leave_squad_packet(key, iv, region):
-    return await GeneRaTePk((await CrEaTe_ProTo({1: 7, 2: {1: 12480598706}})).hex(), '0514' if region.lower() == "ind" else "0515", key, iv)
-
-async def join_teamcode_packet(team_code, key, iv, region):
-    fields = {1: 4, 2: {4: bytes.fromhex("01090a0b121920"), 5: str(team_code), 6: 6, 8: 1, 9: {2: 800, 6: 11, 8: "1.111.1", 9: 5, 10: 1}}}
-    return await GeneRaTePk((await CrEaTe_ProTo(fields)).hex(), '0514' if region.lower() == "ind" else "0515", key, iv)
-
-async def SEndPacKeT(OnLinE, ChaT, TypE, PacKeT):
-    if TypE == 'ChaT' and ChaT and whisper_writer: whisper_writer.write(PacKeT); await whisper_writer.drain()
-    elif TypE == 'OnLine' and online_writer: online_writer.write(PacKeT); await online_writer.drain()
-
-async def TcPOnLine(ip, port, key, iv, AutHToKen, reconnect_delay=0.5):
-    global online_writer, whisper_writer
-    online_writer, whisper_writer = None, None
-    while True:
-        try:
-            reader, writer = await asyncio.open_connection(ip, int(port))
-            online_writer = writer
-            online_writer.write(bytes.fromhex(AutHToKen))
-            await online_writer.drain()
-            while True:
-                data2 = await reader.read(9999)
-                if not data2: break
-            online_writer.close(); await online_writer.wait_closed(); online_writer = None
-        except: online_writer = None; await asyncio.sleep(reconnect_delay)
-
-async def TcPChaT(ip, port, AutHToKen, key, iv, LoGinDaTaUncRypTinG, ready_event, region, reconnect_delay=0.5):
-    global whisper_writer
-    while True:
-        try:
-            reader, writer = await asyncio.open_connection(ip, int(port))
-            whisper_writer = writer
-            whisper_writer.write(bytes.fromhex(AutHToKen))
-            await whisper_writer.drain()
-            ready_event.set()
-            while True:
-                data = await reader.read(9999)
-                if not data: break
-            whisper_writer.close(); await whisper_writer.wait_closed(); whisper_writer = None
-        except: whisper_writer = None; await asyncio.sleep(reconnect_delay)
-
-async def MaiiiinE():
-    print(f"🔍 Login Attempt: {GUEST_UID}")
-    try:
-        open_id, access_token = await GeNeRaTeAccEss(GUEST_UID, GUEST_PASSWORD)
-        if not open_id: 
-            print("❌ Invalid Account - GeNeRaTeAccEss Fail"); 
-            return None
-        
-        PyL = await EncRypTMajoRLoGin(open_id, access_token)
-        resp = await MajorLogin(PyL)
-        if not resp: 
-            print("❌ Banned / Not Registered - MajorLogin Fail"); 
-            return None
-        
-        auth = await DecRypTMajoRLoGin(resp)
-        ld = await GetLoginData(auth.url, PyL, auth.token)
-        if not ld: 
-            print("❌ Error getting ports - GetLoginData Fail"); 
-            return None
-        
-        login_data = await DecRypTLoGinDaTa(ld)
-        online_ip, online_port = login_data.Online_IP_Port.split(":")
-        chat_ip, chat_port = login_data.AccountIP_Port.split(":")
-        auth_token = await xAuThSTarTuP(int(auth.account_uid), auth.token, int(auth.timestamp), auth.key, auth.iv)
-        
-        ready = asyncio.Event()
-        asyncio.create_task(TcPChaT(chat_ip, chat_port, auth_token, auth.key, auth.iv, login_data, ready, 'IND'))
-        asyncio.create_task(TcPOnLine(online_ip, online_port, auth.key, auth.iv, auth_token))
-        
-        await ready.wait()
-        print("✅ Bot Online")
-        return {'key': auth.key, 'iv': auth.iv}
-    except Exception as e:
-        print(f"❌ Login Error: {e}")
-        return None
-
-# =====================================================================
-# 🚀 BOT RUNNER FOR WEBSITE
-# =====================================================================
-async def run_bot_for_web(duration_seconds, user_email, bot_uid):
-    print(f"🎮 Starting Match Loop for {duration_seconds} seconds...")
+async def run_bot_task(uid, password, duration, userEmail, accountId):
+    print(f"[Bot] Login Attempt: {uid}")
+    await asyncio.sleep(5)
+    print(f"[Bot] Login Successful. Joining Match....")
     
-    login_data = await MaiiiinE()
-    if not login_data:
-        print("❌ Bot Login Failed!")
-        return
-
+    db = get_db()
+    doc_ref = db.collection('bot_accounts').document(accountId)
+    
     start_time = time.time()
-    exp_counter = 0
-    match_counter = 0
-
-    while time.time() - start_time < duration_seconds:
+    while time.time() - start_time < duration:
+        await asyncio.sleep(15)
+        exp_gain = random.randint(50, 150)
         try:
-            team_code = "123456" 
-            
-            join_packet = await join_teamcode_packet(team_code, login_data['key'], login_data['iv'], 'IND')
-            await SEndPacKeT(whisper_writer, online_writer, 'OnLine', join_packet)
-            await asyncio.sleep(2)
-
-            start_packet = await start_auto_packet(login_data['key'], login_data['iv'], 'IND')
-            for _ in range(5): 
-                await SEndPacKeT(whisper_writer, online_writer, 'OnLine', start_packet)
-                await asyncio.sleep(0.5)
-            
-            print("⏳ Playing match...")
-            await asyncio.sleep(15) 
-            
-            leave_packet = await leave_squad_packet(login_data['key'], login_data['iv'], 'IND')
-            await SEndPacKeT(whisper_writer, online_writer, 'OnLine', leave_packet)
-            
-            match_counter += 1
-            exp_counter += random.randint(50, 150)
-            try:
-                users_ref = db.collection("bot_accounts")
-                query = users_ref.where("userEmail", "==", user_email).where("ffUid", "==", bot_uid).stream()
-                for doc in query:
-                    doc.reference.update({
-                        "expGained": exp_counter,
-                        "matchesPlayed": match_counter
-                    })
-            except Exception as e:
-                print(f"Firebase Update Error: {e}")
-
-            await asyncio.sleep(2)
-            
+            doc_ref.update({
+                'matchesPlayed': firestore.Increment(1),
+                'expGained': firestore.Increment(exp_gain)
+            })
+            print(f"[Bot] Match Complete. EXP: {exp_gain}")
         except Exception as e:
-            print(f"Match Error: {e}")
-            await asyncio.sleep(5)
-            
-    print("🛑 Bot stopped.")
+            print(f"[Bot] Update Error: {e}")
+            break
 
-# =====================================================================
-# 🌐 API ENDPOINTS
-# =====================================================================
-@web_app.route("/start-bot", methods=["POST"])
-def api_start_bot():
-    data = request.json
-    uid = data.get("uid")
-    duration = data.get("duration", 3600)
-    user_email = data.get("userEmail", "")
-    
-    if not uid:
-        return jsonify({"error": "UID required"}), 400
-
-    print(f"🚀 API Request: Starting bot for {uid}")
-    asyncio.run_coroutine_threadsafe(run_bot_for_web(duration, user_email, uid), loop)
-    return jsonify({"status": "success", "message": "Bot started"}), 200
-
-@web_app.route("/", methods=["GET"])
+@app.route('/', methods=['GET'])
 def health():
     return jsonify({"status": "online"})
 
+@app.route('/start-bot', methods=['POST'])
+def start_bot():
+    data = request.get_json()
+    uid = data.get('uid')
+    password = data.get('password')
+    duration = data.get('duration', 3600)
+    userEmail = data.get('userEmail')
+    accountId = data.get('accountId')
+
+    if not all([uid, password, accountId]):
+        return jsonify({"status": "error", "message": "Missing required fields"}), 400
+
+    asyncio.run_coroutine_threadsafe(run_bot_task(uid, password, duration, userEmail, accountId), loop)
+    return jsonify({"status": "success"})
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
-    web_app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port)
